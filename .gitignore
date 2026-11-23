@@ -1,0 +1,26 @@
+# 樱花树 3D 页面 —— 只发布网页运行必需的文件
+_shots/
+_tools/
+_tex_grass/
+_tex_grass2/
+*.log
+_*.py
+放行局域网8080.ps1
+启动分享.bat
+启动分享.ps1
+index-programmatic.html
+models/grass_lawn.glb
+models/pug.glb
+models/tree_sakura.glb
+models/beagle.glb
+models/corgi.glb
+models/doberman.binz
+models/dog_madtroll.glb
+models/dog.glb
+models/golden.glb
+models/husky.glb
+models/maltese.glb
+models/puppy.glb
+models/shepherd.glb
+js/bark-b64.js
+js/main.js

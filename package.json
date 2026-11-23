@@ -1,0 +1,13 @@
+{
+  "name": "sakura-3d",
+  "version": "2.0.0",
+  "description": "高真实感 3D 樱花树（模型版）—— 艺术家 GLB 模型 + 动态飘落花瓣 + 电影光照",
+  "scripts": {
+    "dev": "npx serve . -p 8080",
+    "start": "python -m http.server 8080",
+    "build": "echo '纯静态项目，无构建步骤；部署时整体上传目录（含 models/）即可'"
+  },
+  "dependencies": {
+    "three": "^0.131.0"
+  }
+}

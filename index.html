@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高真实感 3D 樱花树</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; font-family:'Segoe UI', system-ui, sans-serif; background:#2a1822; }
+#canvas-container { position:fixed; inset:0; }
+#canvas-container canvas { cursor:grab; display:block; }
+#canvas-container canvas:active { cursor:grabbing; }
+
+#title { display:none; }
+#control-panel {
+  position:fixed; top:78px; right:20px; z-index:10;
+  background:linear-gradient(160deg, rgba(38,16,30,.62), rgba(22,10,20,.58));
+  backdrop-filter:blur(18px) saturate(1.2);
+  border:1px solid rgba(255,190,210,.16);
+  border-radius:16px; padding:16px 16px 14px;
+  color:#f4d8e2; width:246px;
+  max-height:calc(100vh - 98px); overflow-y:auto;
+  transition:transform .32s cubic-bezier(.4,0,.2,1), opacity .28s;
+  box-shadow:0 18px 50px rgba(30,5,18,.38), inset 0 1px 0 rgba(255,220,235,.08);
+}
+#control-panel::-webkit-scrollbar { width:6px; }
+#control-panel::-webkit-scrollbar-thumb { background:rgba(255,170,195,.25); border-radius:3px; }
+#control-panel.collapsed { transform:translateX(calc(100% + 40px)); opacity:0; }
+#panel-toggle {
+  position:fixed; top:20px; right:20px; z-index:12;
+  width:46px; height:46px;
+  background:linear-gradient(160deg, rgba(46,20,36,.82), rgba(24,11,22,.76));
+  border:1px solid rgba(255,190,210,.24); backdrop-filter:blur(12px) saturate(1.2);
+  border-radius:14px; color:#ffe0ea;
+  cursor:pointer; font-size:19px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 26px rgba(30,5,18,.34), inset 0 1px 0 rgba(255,220,235,.10);
+  transition:background .2s, transform .2s;
+}
+#panel-toggle:hover { background:rgba(70,31,52,.86); }
+#panel-toggle:active { transform:scale(.94); }
+.panel-title { font-size:12px; font-weight:600; letter-spacing:2px; margin-bottom:12px; color:#ffc8d8; }
+.ctrl-row { margin-bottom:12px; }
+.ctrl-row label { display:block; font-size:11px; color:#c8a0b0; margin-bottom:5px; letter-spacing:1px; }
+.ctrl-row .value { float:right; font-size:11px; color:#ffb8c8; }
+.ctrl-row input[type=range] {
+  width:100%; -webkit-appearance:none; appearance:none;
+  height:4px; border-radius:2px; background:rgba(255,180,205,.22); outline:none;
+}
+.ctrl-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none; width:14px; height:14px; border-radius:50%;
+  background:linear-gradient(135deg,#ffb0c4,#e8789a);
+  box-shadow:0 0 8px rgba(255,150,180,.6); cursor:pointer;
+}
+.sec-label { font-size:10px; letter-spacing:2px; color:#9a7a88; margin:12px 0 6px; }
+.btn-row { display:flex; gap:6px; flex-wrap:wrap; }
+.ctrl-btn {
+  flex:1; min-width:52px; padding:7px 8px;
+  background:rgba(255,150,180,.09); border:1px solid rgba(255,180,200,.16);
+  border-radius:9px; color:#ffd0dc; font-size:11px; cursor:pointer;
+  transition:background .2s, border-color .2s, transform .12s;
+}
+.ctrl-btn:hover { background:rgba(255,150,180,.22); border-color:rgba(255,180,200,.3); transform:translateY(-1px); }
+.ctrl-btn.active {
+  background:linear-gradient(135deg, rgba(255,150,180,.34), rgba(232,120,154,.22));
+  border-color:rgba(255,180,200,.42);
+  box-shadow:0 2px 10px rgba(255,150,180,.2);
+}
+
+#hint { display:none; }
+#model-state { display:none; }
+#gift-sack, .portal-hint { display:none !important; }
+#model-state.err { color:#ff9a9a; background:rgba(60,10,10,.5); }
+
+#file-mask {
+  position:fixed; inset:0; z-index:20; display:none;
+  align-items:center; justify-content:center;
+  background:rgba(20,10,18,.88); color:#f4d8e2; text-align:center;
+}
+#file-mask.show { display:flex; }
+#file-mask .box { max-width:520px; padding:30px 34px; }
+#file-mask h2 { font-weight:300; letter-spacing:3px; font-size:22px; margin-bottom:16px; }
+#file-mask code {
+  display:block; background:rgba(255,150,180,.12); border:1px solid rgba(255,180,200,.2);
+  padding:10px 14px; border-radius:8px; font-size:12px; margin:10px 0;
+  word-break:break-all;
+}
+#file-mask p { font-size:13px; line-height:1.9; color:rgba(255,225,235,.8); }
+
+@media (max-width:640px) {
+  #control-panel { width:170px; padding:12px; }
+  #title h1 { font-size:15px; }
+  #hint { font-size:11px; }
+}
+</style>
+<link rel="stylesheet" href="css/portal.css?v=260">
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div id="title">
+  <h1>SAKURA</h1>
+  <p>高真实感 3D 樱花树</p>
+</div>
+
+<div id="control-panel" class="collapsed">
+  <div class="panel-title">场景控制</div>
+  <div class="ctrl-row">
+    <label>飘落花瓣 <span class="value" id="petal-count-label">300</span></label>
+    <input type="range" id="petal-count" min="0" max="2000" value="300">
+  </div>
+  <div class="ctrl-row">
+    <label>风力 <span class="value" id="wind-label">1.0</span></label>
+    <input type="range" id="wind-strength" min="0" max="3" step="0.1" value="1">
+  </div>
+  <div class="sec-label">时间模式</div>
+  <div class="btn-row">
+    <button class="ctrl-btn active" data-time="day">白天</button>
+    <button class="ctrl-btn" data-time="night">夜晚</button>
+    <button class="ctrl-btn" data-realtime>真实时间</button>
+  </div>
+  <div class="sec-label">季节</div>
+  <div class="btn-row">
+    <button class="ctrl-btn active" data-season="spring">春</button>
+    <button class="ctrl-btn" data-season="summer">夏</button>
+    <button class="ctrl-btn" data-season="autumn">秋</button>
+    <button class="ctrl-btn" data-season="winter">冬</button>
+  </div>
+  <div class="sec-label">天气</div>
+  <div class="btn-row">
+    <button class="ctrl-btn active" data-weather="clear">晴</button>
+    <button class="ctrl-btn" data-weather="cloudy">阴</button>
+    <button class="ctrl-btn" data-weather="rain">雨</button>
+  </div>
+  <div class="sec-label">观察视角</div>
+  <div class="btn-row">
+    <button class="ctrl-btn" data-view="full">全景</button>
+    <button class="ctrl-btn" data-view="mid">中景</button>
+    <button class="ctrl-btn" data-view="close">近景</button>
+  </div>
+  <div class="sec-label">功能</div>
+  <div class="btn-row">
+    <button class="ctrl-btn" id="btn-reset">重置</button>
+    <button class="ctrl-btn active" id="btn-anim">动画</button>
+    <button class="ctrl-btn" id="btn-fullscreen">全屏</button>
+  </div>
+</div>
+
+<button id="panel-toggle" aria-label="收起控制台" title="收起 / 展开控制台">☰</button>
+
+<div id="hint">左键旋转 · 滚轮缩放 · 右键平移</div>
+
+<div id="model-state">正在加载 3D 模型…</div>
+
+<div id="file-mask">
+  <div class="box">
+    <h2>请通过本地服务器打开</h2>
+    <p>3D 模型文件需要在 HTTP 服务下才能加载（直接双击 HTML 会被浏览器安全策略拦截）。在项目目录运行：</p>
+    <code>cd E:\樱花树\sakura-3d<br>python -m http.server 8080</code>
+    <p>然后浏览器打开：<code>http://localhost:8080/</code></p>
+  </div>
+</div>
+
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/build/three.min.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/postprocessing/Pass.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://fastly.jsdelivr.net/npm/three@0.131.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="js/petal-b64.js?v=260"></script>
+<script src="js/model-main.js?v=260"></script>
+<script src="js/portal.js?v=260"></script>
+</body>
+</html>

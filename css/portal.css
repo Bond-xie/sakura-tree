@@ -289,6 +289,7 @@
 
 /* ---------- 礼物盒：奶白和纸 + 樱粉缎带 + 封蜡 ---------- */
 .gift-stage {
+  position: relative;
   display: flex; flex-direction: column; align-items: center;
   padding: 34px 0 14px;
 }
@@ -491,8 +492,9 @@
 .giftbox.open { animation: none; }
 .giftbox.open .gb-halo { animation: glowBurst .95s ease-out forwards; }
 .giftbox.out {
+  position: absolute; left: 50%; top: 0;
   opacity: 0;
-  transform: translateY(-18px) scale(.82);
+  transform: translate(-50%, -18px) scale(.82);
   pointer-events: none;
 }
 @keyframes glowBurst {
@@ -633,4 +635,31 @@ body.portal-open .portal-hint { opacity: 0; }
   .petal { border-radius: 50% 50% 50% 12% / 50% 50% 50% 24%; }
   #gift-sack { left: 14px; bottom: 14px; }
   #gift-list { left: 14px; bottom: 56px; width: 190px; }
+}
+
+/* ---------- 横屏矮视口（手机横握）：压缩间距，礼物卡与按钮首屏可见 ---------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  #portal-stage { padding: 12px; }
+  .stage-wrap { max-height: calc(100vh - 24px); width: min(600px, 100%); }
+
+  /* 故事纸卡 */
+  .paper { padding: 18px 22px 16px; }
+  .paper-head { margin-bottom: 10px; padding-bottom: 7px; }
+  .paper-no { font-size: 20px; }
+  .paper h2 { font-size: 18px; margin: 0 0 10px; }
+  .paper p { font-size: 13px; line-height: 1.6; margin: 0 0 8px; }
+  .paper .paper-note { margin-top: 2px; font-size: 11px; }
+  .paper-btn { margin-top: 12px; padding: 6px 0 5px; }
+
+  /* 礼物阶段：礼盒退场后脱流，卡片独占垂直空间 */
+  .gift-stage { padding: 10px 0 8px; }
+  .gift-card { width: min(360px, 80vw); margin: 12px auto 0; padding: 18px 22px 16px; }
+  .gift-mark { width: 20px; height: 20px; margin-bottom: 9px; }
+  .gift-card h3 { font-size: 17px; margin: 0 0 8px; }
+  .gift-card p { font-size: 12px; line-height: 1.6; }
+  .gift-take { margin-top: 12px; padding: 8px 22px; }
+  .gift-hint { margin-top: 10px; }
+
+  /* 小游戏拼字盘 */
+  .petal-field { height: 190px; }
 }

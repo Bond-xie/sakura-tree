@@ -326,7 +326,7 @@
     canvas.addEventListener('pointerup', function (e) {
       if (active) return;
       var dx = e.clientX - downX, dy = e.clientY - downY;
-      if (dx * dx + dy * dy > 30) return;      // 拖动旋转视角，不算点击
+      if (dx * dx + dy * dy > 400) return;     // 手指抖动/拖动旋转视角都不算点击（20px 容差）
       if (Date.now() - downT > 800) return;    // 长按不算
       pick(e.clientX, e.clientY);
     });

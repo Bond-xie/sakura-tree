@@ -346,6 +346,105 @@
     controls.minPolarAngle = 0.18;
     controls.maxPolarAngle = Math.PI * 0.47;
 
+    /* ------------------------------------------------------------
+       移动端触摸手势：自己接管，不走 OrbitControls 的触摸路径。
+       原因：不同手机浏览器对 touch / pointer 的派发不一致（有的把单指拖动
+       当成页面滚动直接 pointercancel 掉），表现为"只能拉近拉远、转不了圈"。
+       这里在容器捕获阶段先把 OrbitControls 关掉，再按标准手势实现：
+         单指拖动 = 绕树旋转，双指捏合 = 拉近拉远
+       鼠标（电脑端）完全不受影响，仍由 OrbitControls 处理。
+       ------------------------------------------------------------ */
+    function setupTouchControls() {
+      const dom = renderer.domElement;
+      dom.style.touchAction = 'none';
+      if (dom.parentElement) dom.parentElement.style.touchAction = 'none';
+      // 显式声明（个别机型/旧浏览器会被改成别的默认）
+      if (THREE.TOUCH) controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+      controls.enableRotate = true;
+      controls.enableZoom = true;
+
+      const pts = new Map();
+      let mode = 0;            // 1 = 单指旋转，2 = 双指缩放
+      let prevEnabled = true;  // 接管前 OrbitControls 的状态（卡片打开时是 false，用完要还原）
+      let lastX = 0, lastY = 0, lastDist = 0;
+      const sph = new THREE.Spherical();
+
+      function readSph() {
+        sph.setFromVector3(camera.position.clone().sub(controls.target));
+      }
+      function applySph() {
+        sph.phi = Math.max(controls.minPolarAngle, Math.min(controls.maxPolarAngle, sph.phi));
+        sph.radius = Math.max(controls.minDistance, Math.min(controls.maxDistance, sph.radius));
+        sph.makeSafe();
+        camera.position.setFromSpherical(sph).add(controls.target);
+        camera.lookAt(controls.target);
+      }
+      function gap(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+      // 捕获阶段抢在 OrbitControls 之前：触摸时禁用它的指针逻辑
+      document.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'touch') return;
+        if (e.target !== dom && !dom.contains(e.target)) return;
+        if (pts.size === 0) {
+          if (!controls.enabled) return;        // 故事卡打开时本来就该锁镜头（只拦第一根手指）
+          prevEnabled = controls.enabled;
+          controls.enabled = false;
+        }
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        readSph();
+        if (pts.size === 1) {
+          mode = 1;
+          lastX = e.clientX; lastY = e.clientY;
+        } else if (pts.size === 2) {
+          mode = 2;
+          const arr = Array.from(pts.values());
+          lastDist = gap(arr[0], arr[1]);
+        }
+      }, true);
+
+      document.addEventListener('pointermove', function (e) {
+        if (e.pointerType !== 'touch') return;
+        if (!pts.has(e.pointerId)) return;
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (mode === 1 && pts.size === 1) {
+          const dx = e.clientX - lastX;
+          const dy = e.clientY - lastY;
+          lastX = e.clientX; lastY = e.clientY;
+          sph.theta -= dx * 0.0065;       // 横向拖动 → 绕树转圈（跟手方向）
+          sph.phi -= dy * 0.0065;         // 纵向拖动 → 抬头/低头
+          applySph();
+        } else if (mode === 2 && pts.size >= 2) {
+          const arr = Array.from(pts.values());
+          const d = gap(arr[0], arr[1]);
+          if (lastDist > 1 && d > 1) {
+            const ratio = lastDist / d;
+            sph.radius = sph.radius * (1 + (ratio - 1) * 0.6);   // 拇指张开 = 拉近（带阻尼，免得一下捏到极限）
+            applySph();
+          }
+          lastDist = d;
+        }
+      }, { capture: true, passive: false });
+
+      function endTouch(e) {
+        if (e && e.pointerType !== 'touch') return;
+        if (e) pts.delete(e.pointerId);
+        if (pts.size === 0) {
+          mode = 0;
+          lastDist = 0;
+          controls.enabled = prevEnabled;   // 还原接管前的状态（卡片开着就继续保持锁定）
+        } else if (pts.size === 1) {
+          mode = 1;
+          const one = Array.from(pts.values())[0];
+          lastX = one.x; lastY = one.y;
+          readSph();
+        }
+      }
+      document.addEventListener('pointerup', endTouch, true);
+      document.addEventListener('pointercancel', endTouch, true);
+      dom.addEventListener('lostpointercapture', endTouch, true);
+    }
+
     // 背景天空 + 光照 + 地面 + 海洋 + 花瓣
     buildSky();
     buildLights();
@@ -375,6 +474,7 @@
       if (document.hidden) clock.getDelta(); // 后台时清空累计 delta
     });
 
+    setupTouchControls();
     setupUI();
   }
 

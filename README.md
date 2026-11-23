@@ -66,6 +66,25 @@ sakura-3d/
 - **交互**：左键旋转 / 滚轮缩放 / 右键平移；全景 / 中景 / 近景一键切换（按模型尺寸动态计算）；动画开关 / 全屏 / 重置；加载进度显示
 - **性能**：像素比上限 2、后台自动降帧、模型包围盒归一化、实例化花瓣/落叶/雨线
 
+## 在线地址（GitHub Pages）
+
+- 公网访问：**https://bond-xie.github.io/sakura-tree/**
+- 源码仓库：https://github.com/Bond-xie/sakura-tree
+- 已发布：`index.html`、`css/`、`js/`（含 `cannon.min.js`）、`models/` 里运行必需的 3 个 GLB（`cherry_blossom_trees` / `cartoon_shiba` / `bird`）
+
+更新发布流程（改完本地文件后）：
+
+```
+cd E:\樱花树\sakura-3d
+git add -A
+git commit -m "说明这次改了什么"
+git push
+```
+
+推送后 1–2 分钟线上自动生效。GitHub Pages 有缓存，和本地一样记得把 `index.html` 里 4 处 `?v=` 升一版再推，手机端才不会拿旧文件。
+
+> 手机/平板用浏览器打开上面的公网地址即可；电脑关机也不影响。第一次打开要下载 Three.js CDN 和 18MB 的树模型，4G 下大约 10–20 秒，之后有缓存会快很多。
+
 ## 部署到静态网站
 
 模型版是纯静态站点（无构建步骤），可整体上传到任意静态托管：
